@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>lamacOs Mitarbeiter-System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f3f3f3;
+    }
+    h1 { color: #222; }
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+      font-size: 16px;
+    }
+    .info-box {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: white;
+      border: 1px solid #ccc;
+    }
+    .hidden { display: none; }
+    .admin-form input { display: block; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+<h1>lamacOs Mitarbeiter-System</h1>
+
+<label for="codeInput">Code eingeben:</label>
+<input type="text" id="codeInput">
+<button onclick="checkCode()">Suchen</button>
+
+<div id="infoBox" class="info-box hidden"></div>
+
+<div id="adminForm" class="info-box hidden admin-form">
+  <h2>Mitarbeiter hinzufügen oder bearbeiten</h2>
+  <input type="text" id="newCode" placeholder="Code (z. B. cutter001)">
+  <input type="text" id="newName" placeholder="Name">
+  <input type="text" id="newGehalt" placeholder="Gehalt">
+  <input type="text" id="newJob" placeholder="Job">
+  <input type="text" id="newEmail" placeholder="E-Mail">
+  <button onclick="saveData()">Speichern</button>
+</div>
+
+<script>
+  const adminCode = "admin_lamacOs_2025";
+  let mitarbeiter = JSON.parse(localStorage.getItem("mitarbeiterDB")) || {};
+
+  function checkCode() {
+    const inputRaw = document.getElementById("codeInput").value.trim();
+    const input = inputRaw.toLowerCase();
+    const infoBox = document.getElementById("infoBox");
+    const adminForm = document.getElementById("adminForm");
+
+    infoBox.classList.add("hidden");
+    adminForm.classList.add("hidden");
+
+    // Mitarbeiter löschen, wenn Befehl /delete.CODE
+    if (input.startsWith("/delete.")) {
+      const codeToDelete = input.substring(8); // alles nach /delete.
+      if (mitarbeiter[codeToDelete]) {
+        delete mitarbeiter[codeToDelete];
+        localStorage.setItem("mitarbeiterDB", JSON.stringify(mitarbeiter));
+        infoBox.innerHTML = `Mitarbeiter <strong>${codeToDelete}</strong> wurde gelöscht.`;
+      } else {
+        infoBox.innerHTML = `Kein Mitarbeiter mit dem Code <strong>${codeToDelete}</strong> gefunden.`;
+      }
+      infoBox.classList.remove("hidden");
+      return;
+    }
+
+    // Admin-Zugang
+    if (input === adminCode.toLowerCase()) {
+      adminForm.classList.remove("hidden");
+      return;
+    }
+
+    // Normale Mitarbeitersuche
+    if (mitarbeiter[input]) {
+      const m = mitarbeiter[input];
+      infoBox.innerHTML = `
+        <strong>Name:</strong> ${m.name}<br>
+        <strong>Gehalt:</strong> ${m.gehalt}<br>
+        <strong>Job:</strong> ${m.job}<br>
+        <strong>E-Mail:</strong> ${m.email}
+      `;
+    } else {
+      infoBox.innerHTML = "Kein Mitarbeiter mit diesem Code gefunden.";
+    }
+    infoBox.classList.remove("hidden");
+  }
+
+  function saveData() {
+    const code = document.getElementById("newCode").value.trim().toLowerCase();
+    const name = document.getElementById("newName").value.trim();
+    const gehalt = document.getElementById("newGehalt").value.trim();
+    const job = document.getElementById("newJob").value.trim();
+    const email = document.getElementById("newEmail").value.trim();
+
+    if (!code || !name || !gehalt || !job || !email) {
+      alert("Bitte alle Felder ausfüllen.");
+      return;
+    }
+
+    mitarbeiter[code] = { name, gehalt, job, email };
+    localStorage.setItem("mitarbeiterDB", JSON.stringify(mitarbeiter));
+
+    alert("Gespeichert!");
+
+    // Formular ausblenden und Eingabefeld leeren
+    document.getElementById("adminForm").classList.add("hidden");
+    document.getElementById("codeInput").value = "";
+  }
+</script>
+
+</body>
+</html>
