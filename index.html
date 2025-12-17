@@ -4,30 +4,16 @@
   <meta charset="UTF-8">
   <title>lamacOs Mitarbeiter-System</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f3f3f3;
-    }
-    input, button {
-      padding: 10px;
-      margin: 5px 0;
-      width: 100%;
-    }
-    .box {
-      background: white;
-      padding: 15px;
-      margin-top: 20px;
-      border: 1px solid #ccc;
-    }
-    .hidden { display: none; }
+    body { font-family: Arial; background:#f3f3f3; padding:20px }
+    input, button { padding:10px; margin:5px 0; width:100% }
+    .box { background:#fff; padding:15px; margin-top:20px; border:1px solid #ccc }
+    .hidden { display:none }
   </style>
 </head>
 <body>
 
 <h1>lamacOs Mitarbeiter-System</h1>
 
-<!-- LOGIN -->
 <div id="loginBox" class="box">
   <h2>Admin Login</h2>
   <input id="loginEmail" placeholder="Admin E-Mail">
@@ -35,7 +21,6 @@
   <button onclick="login()">Login</button>
 </div>
 
-<!-- SUCHEN -->
 <div class="box">
   <h2>Mitarbeiter suchen</h2>
   <input id="codeInput" placeholder="Mitarbeiter-Code">
@@ -43,7 +28,6 @@
   <div id="result"></div>
 </div>
 
-<!-- ADMIN -->
 <div id="adminBox" class="box hidden">
   <h2>Mitarbeiter verwalten</h2>
   <input id="code" placeholder="Code">
@@ -58,40 +42,35 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
-  const firebaseConfig = {
+  const app = initializeApp({
     apiKey: "AIzaSyB-Zq6-NFuD5H8xbNBNCqjmEgjqwx0eXoA",
     authDomain: "mitarbeitersystem.firebaseapp.com",
-    projectId: "mitarbeitersystem",
-    storageBucket: "mitarbeitersystem.firebasestorage.app",
-    messagingSenderId: "1000951702088",
-    appId: "1:1000951702088:web:722255168a5cd4f0222e7d"
-  };
+    projectId: "mitarbeitersystem"
+  });
 
-  const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  const adminBox = document.getElementById("adminBox");
   const loginBox = document.getElementById("loginBox");
+  const adminBox = document.getElementById("adminBox");
 
   onAuthStateChanged(auth, user => {
-    if (user) {
-      adminBox.classList.remove("hidden");
-      loginBox.classList.add("hidden");
-    } else {
-      adminBox.classList.add("hidden");
-      loginBox.classList.remove("hidden");
-    }
+    loginBox.classList.toggle("hidden", !!user);
+    adminBox.classList.toggle("hidden", !user);
   });
 
   window.login = async () => {
-    await signInWithEmailAndPassword(
-      auth,
-      loginEmail.value,
-      loginPassword.value
-    );
+    try {
+      await signInWithEmailAndPassword(
+        auth,
+        document.getElementById("loginEmail").value,
+        document.getElementById("loginPassword").value
+      );
+    } catch (e) {
+      alert(e.message);
+    }
   };
 
   window.logout = async () => {
@@ -99,35 +78,44 @@
   };
 
   window.save = async () => {
-    await addDoc(collection(db, "mitarbeiter"), {
-      code: code.value.toLowerCase(),
-      name: name.value,
-      job: job.value,
-      gehalt: gehalt.value,
-      email: email.value
-    });
-    alert("Gespeichert!");
+    try {
+      await addDoc(collection(db, "mitarbeiter"), {
+        code: document.getElementById("code").value.toLowerCase(),
+        name: document.getElementById("name").value,
+        job: document.getElementById("job").value,
+        gehalt: document.getElementById("gehalt").value,
+        email: document.getElementById("email").value
+      });
+      alert("Gespeichert!");
+    } catch (e) {
+      alert("Fehler beim Speichern: " + e.message);
+    }
   };
 
   window.search = async () => {
-    const q = query(
-      collection(db, "mitarbeiter"),
-      where("code", "==", codeInput.value.toLowerCase())
-    );
-    const snap = await getDocs(q);
+    try {
+      const q = query(
+        collection(db, "mitarbeiter"),
+        where("code", "==", document.getElementById("codeInput").value.toLowerCase())
+      );
+      const snap = await getDocs(q);
 
-    if (snap.empty) {
-      result.innerText = "Nicht gefunden.";
-    } else {
-      snap.forEach(d => {
-        const m = d.data();
-        result.innerHTML = `
-          <b>${m.name}</b><br>
-          Job: ${m.job}<br>
-          Gehalt: ${m.gehalt}<br>
-          E-Mail: ${m.email}
-        `;
-      });
+      const result = document.getElementById("result");
+      if (snap.empty) {
+        result.innerText = "Nicht gefunden.";
+      } else {
+        snap.forEach(d => {
+          const m = d.data();
+          result.innerHTML = `
+            <b>${m.name}</b><br>
+            Job: ${m.job}<br>
+            Gehalt: ${m.gehalt}<br>
+            E-Mail: ${m.email}
+          `;
+        });
+      }
+    } catch (e) {
+      alert("Such-Fehler: " + e.message);
     }
   };
 </script>
